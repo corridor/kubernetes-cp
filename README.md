@@ -36,9 +36,11 @@ Update these files before deployment:
 - `overlays/example/kustomization.yaml`
   - set the namespace
   - set the application image for `corridor-app` and `corridor-worker`
-    - currently set to use Google Artifact Registry (Hosted by `Corridor Platforms`)
-  - set the Jupyter image to `corridor-jupyter`
-    - currently set to use Google Artifact Registry (Hosted by `Corridor Platforms`)
+    - currently:
+      `us-central1-docker.pkg.dev/heroic-oven-269206/corridor/cp-api:<tag>`
+  - set the Jupyter image for `corridor-jupyter`
+    - currently:
+      `us-central1-docker.pkg.dev/heroic-oven-269206/corridor/cp-jupyter:<tag>`
   - set the public hostname
 - `overlays/example/configs/api_config.py`
   - set database, Redis, and application-specific settings
@@ -54,6 +56,86 @@ Redis manifests are kept under `shared/redis` because a single Redis deployment
 can be shared across multiple Corridor deployments instead of running one Redis
 instance per overlay.
 
+## Accessing GAR Images
+
+Clients pull private images from Google Artifact Registry using a read-only
+service account key provided by Corridor.
+
+### 1. Receive GAR credentials and image references
+
+Corridor must provide:
+
+- a `key.json` service account key with read access to the required GAR repository
+- the application image URL and tag for `corridor-app` and `corridor-worker`
+- the Jupyter image URL and tag for `corridor-jupyter`
+
+The application image currently uses:
+
+```text
+us-central1-docker.pkg.dev/heroic-oven-269206/corridor/cp-api:<tag>
+```
+
+Jupyter currently uses:
+
+```text
+us-central1-docker.pkg.dev/heroic-oven-269206/corridor/cp-jupyter:<tag>
+```
+
+### 2. Create a pull secret in the target namespace
+
+Use the GAR service account key to create a Docker registry secret:
+
+```bash
+kubectl create secret docker-registry gar-pull-secret \
+  --docker-server=<gar-registry-host> \
+  --docker-username=_json_key \
+  --docker-password="$(cat key.json)" \
+  --namespace <namespace>
+```
+
+Set `--docker-server` to the registry host from the image URL, such as
+`us-west1-docker.pkg.dev` or `us-central1-docker.pkg.dev`.
+
+If Jupyter is hosted in a different GAR registry host from the app image,
+create an additional secret for that host or use a combined Docker config secret.
+
+### 3. Reference the pull secret from workloads
+
+The manifests in this repo expect an image pull secret in the target namespace.
+You can either:
+
+- create the secret as `registry-secret`, or
+- update the manifests to use `gar-pull-secret`
+
+### 4. Point the overlay at the GAR images
+
+Update `overlays/example/kustomization.yaml` so the app and worker deployments
+use the application GAR image:
+
+```text
+us-central1-docker.pkg.dev/heroic-oven-269206/corridor/cp-api:<tag>
+```
+
+Update the Jupyter deployment so it uses the Jupyter-specific GAR image:
+
+```text
+us-central1-docker.pkg.dev/heroic-oven-269206/corridor/cp-jupyter:<tag>
+```
+
+### 5. Verify image access before rollout
+
+After creating the pull secret and updating the image references, render or apply
+the overlay and check for image pull failures:
+
+```bash
+kubectl apply -k overlays/example
+kubectl get pods -n <namespace>
+kubectl describe pod -n <namespace> <pod-name>
+```
+
+If image authentication is wrong, pod events will show `ImagePullBackOff` or
+registry authorization errors.
+
 ## Deploy
 
 If you want to use the shared Redis instance, deploy it first:
@@ -62,16 +144,9 @@ If you want to use the shared Redis instance, deploy it first:
 kubectl apply -k shared/redis
 ```
 
-Create the image pull secret in the target namespace if required:
-
-```bash
-kubectl create namespace <namespace>
-kubectl create secret docker-registry registry-secret \
-  --docker-server=<registry-host> \
-  --docker-username=<username> \
-  --docker-password=<password> \
-  --namespace <namespace>
-```
+Create the target namespace and GAR pull secret before deployment. Follow the
+steps in `Accessing GAR Images` above. If you use a secret name other than
+`registry-secret`, update the manifests to match.
 
 Render and apply the overlay:
 
@@ -91,8 +166,10 @@ kubectl get svc -n shared
 
 ## Notes
 
-- The base manifests assume the application image contains the `corridor-api`,
-  and `corridor-worker` entrypoints.
+- The app and worker deployments use the application image:
+  `us-central1-docker.pkg.dev/heroic-oven-269206/corridor/cp-api:<tag>`.
+  That image is expected to contain the `corridor-api` and `corridor-worker`
+  entrypoints.
 - Jupyter uses a separate image:
   `us-central1-docker.pkg.dev/heroic-oven-269206/corridor/cp-jupyter`.
   Update the overlay so the Jupyter deployment points at that image before
