@@ -1,0 +1,5 @@
+namespace: shared
+
+resources:
+  - redis-deployment.yaml
+  - namespace.yaml

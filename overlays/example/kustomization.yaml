@@ -1,0 +1,78 @@
+namespace: example
+
+resources:
+  - ../../base
+  - namespace.yaml
+
+images:
+  - name: corridor-app-image
+    newName: us-central1-docker.pkg.dev/heroic-oven-269206/corridor/cp-api
+    newTag: latest
+  - name: corridor-jupyter-image
+    newName: us-central1-docker.pkg.dev/heroic-oven-269206/corridor/cp-jupyter
+    newTag: latest
+
+configMapGenerator:
+  - name: corridor-app-config
+    files:
+      - configs/api_config.py
+  - name: corridor-worker-config
+    files:
+      - configs/api_config.py
+  - name: corridor-jupyter-config
+    files:
+      - configs/jupyter_server_config.py
+      - configs/jupyterhub_config.py
+  - name: ingress-host-config
+    literals:
+      - HOST=example.corridorplatforms.com
+
+replacements:
+  - source:
+      kind: ConfigMap
+      name: ingress-host-config
+      fieldPath: data.HOST
+    targets:
+      - select:
+          kind: Ingress
+          name: app-jupyter-ingress
+        fieldPaths:
+          - spec.rules.0.host
+          - spec.tls.0.hosts.0
+
+patches:
+  - target:
+      kind: PersistentVolumeClaim
+      name: data-pvc
+    patch: |-
+      - op: replace
+        path: /spec/storageClassName
+        value: shared-rwx
+  - target:
+      kind: PersistentVolumeClaim
+      name: uploads-pvc
+    patch: |-
+      - op: replace
+        path: /spec/storageClassName
+        value: shared-rwx
+  - target:
+      kind: PersistentVolumeClaim
+      name: databases-pvc
+    patch: |-
+      - op: replace
+        path: /spec/storageClassName
+        value: shared-rwx
+  - target:
+      kind: PersistentVolumeClaim
+      name: jupyter-pvc
+    patch: |-
+      - op: replace
+        path: /spec/storageClassName
+        value: shared-rwx
+  - target:
+      kind: PersistentVolumeClaim
+      name: notebooks-pvc
+    patch: |-
+      - op: replace
+        path: /spec/storageClassName
+        value: shared-rwx

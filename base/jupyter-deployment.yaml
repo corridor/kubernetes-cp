@@ -1,0 +1,93 @@
+# Jupyter workload and service.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: corridor-jupyter
+  labels:
+    app.kubernetes.io/component: jupyter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: corridor-jupyter
+  template:
+    metadata:
+      labels:
+        app: corridor-jupyter
+    spec:
+      imagePullSecrets:
+        - name: registry-secret
+      containers:
+        - name: corridor-jupyter
+          image: corridor-jupyter-image
+          imagePullPolicy: Always
+          command: ["/bin/bash", "-ec"]
+          args:
+            - |
+              mkdir -p /opt/corridor/data /opt/corridor/uploads /opt/corridor/notebooks /opt/corridor/jupyter /opt/corridor/pids
+              cd /opt/corridor
+              source venv/bin/activate
+              exec venv/bin/corridor-jupyter run
+          ports:
+            - containerPort: 5003
+              name: jupyterhub-port
+          volumeMounts:
+            - name: config-volume
+              mountPath: /opt/corridor/config
+            - name: data-volume
+              mountPath: /opt/corridor/data
+            - name: uploads-volume
+              mountPath: /opt/corridor/uploads
+            - name: jupyter-volume
+              mountPath: /opt/corridor/jupyter
+            - name: notebooks-volume
+              mountPath: /opt/corridor/notebooks
+          resources:
+            requests:
+              memory: "4Gi"
+            limits:
+              memory: "12Gi"
+          livenessProbe:
+            httpGet:
+              path: /jupyter/hub/health
+              port: jupyterhub-port
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /jupyter/hub/health
+              port: jupyterhub-port
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: config-volume
+          configMap:
+            name: corridor-jupyter-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: data-pvc
+        - name: uploads-volume
+          persistentVolumeClaim:
+            claimName: uploads-pvc
+        - name: jupyter-volume
+          persistentVolumeClaim:
+            claimName: jupyter-pvc
+        - name: notebooks-volume
+          persistentVolumeClaim:
+            claimName: notebooks-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: corridor-jupyter-service
+spec:
+  type: ClusterIP
+  selector:
+    app: corridor-jupyter
+  ports:
+    - port: 5003
+      targetPort: 5003

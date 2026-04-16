@@ -1,0 +1,6 @@
+resources:
+  - app-deployment.yaml
+  - worker-deployment.yaml
+  - jupyter-deployment.yaml
+  - pvc.yaml
+  - ingress.yaml

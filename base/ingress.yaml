@@ -1,0 +1,46 @@
+# Routes the public host to the app and Jupyter services.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-jupyter-ingress
+  labels:
+    app.kubernetes.io/component: ingress
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+    nginx.ingress.kubernetes.io/server-alias: ""
+    nginx.ingress.kubernetes.io/server-snippet: |
+      gzip on;
+      gzip_vary on;
+      gzip_comp_level 5;
+      gzip_proxied any;
+      gzip_min_length 102400;
+      gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/javascript application/xml application/wasm application/json;
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - REPLACE_HOST
+      secretName: tls-cert
+  rules:
+    - host: REPLACE_HOST
+      http:
+        paths:
+          - path: /jupyter
+            pathType: Prefix
+            backend:
+              service:
+                name: corridor-jupyter-service
+                port:
+                  number: 5003
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: corridor-app-service
+                port:
+                  number: 5002
