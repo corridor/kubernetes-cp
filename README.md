@@ -71,9 +71,9 @@ Feel free to configure the kubernetes setup based on your needs. Some common con
   `overlays/corridor/configs/api_config.py`
 - If your cluster uses a different RWX storage class, update the PVC patches in
   `overlays/corridor/kustomization.yaml`.
-- Configure TLS secret keys etc in `base/ingress.yml`
-- Configure other nginx configs like gzip/timeout etc. in `base/ingress.yml`
-- Change Memory requests and limits in the respective `base/*.yml` files for that service.
+- Configure TLS secret keys etc in `base/ingress.yaml`
+- Configure other nginx configs like gzip/timeout etc. in `base/ingress.yaml`
+- Change Memory requests and limits in the respective `base/*.yaml` files for that service.
 
 ## FAQs
 
