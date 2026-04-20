@@ -16,7 +16,7 @@ spec:
         app: corridor-worker
     spec:
       imagePullSecrets:
-        - name: registry-secret
+        - name: corridor-registry-secret
       containers:
         - name: corridor-worker
           image: corridor-app-image

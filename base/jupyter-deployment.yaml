@@ -16,7 +16,7 @@ spec:
         app: corridor-jupyter
     spec:
       imagePullSecrets:
-        - name: registry-secret
+        - name: corridor-registry-secret
       containers:
         - name: corridor-jupyter
           image: corridor-jupyter-image

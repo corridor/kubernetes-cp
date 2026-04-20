@@ -1,4 +1,4 @@
-namespace: example
+namespace: corridor
 
 resources:
   - ../../base
@@ -25,7 +25,7 @@ configMapGenerator:
       - configs/jupyterhub_config.py
   - name: ingress-host-config
     literals:
-      - HOST=example.corridorplatforms.com
+      - HOST=corridor.example.com
 
 replacements:
   - source:

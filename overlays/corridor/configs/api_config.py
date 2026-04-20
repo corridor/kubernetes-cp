@@ -3,7 +3,7 @@ import os
 
 
 SQLALCHEMY_DATABASE_URI = (
-    "postgresql://user:password@postgres.example.internal:5432/example"
+    "postgresql://user:password@postgres.corridor.internal:5432/dbname"
 )
 CONFIGS = "/opt/corridor/config"
 DATABASE_DIR = "/opt/corridor/databases"

@@ -16,7 +16,7 @@ spec:
         app: corridor-app
     spec:
       imagePullSecrets:
-        - name: registry-secret
+        - name: corridor-registry-secret
       initContainers:
         - name: init-corridor-app
           image: corridor-app-image
@@ -60,7 +60,7 @@ spec:
               mountPath: /opt/corridor/databases
           livenessProbe:
             httpGet:
-              path: /api
+              path: /corr-api
               port: 5002
             initialDelaySeconds: 90
             periodSeconds: 10
@@ -68,7 +68,7 @@ spec:
             failureThreshold: 10
           readinessProbe:
             httpGet:
-              path: /api
+              path: /corr-api
               port: 5002
             initialDelaySeconds: 20
             periodSeconds: 10
